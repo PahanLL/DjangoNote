@@ -1,9 +1,0 @@
-{% extends 'index.html' %}
-
-{% block content %}
-  <h1>Delete a note "{{ note.title }}"?</h1>
-  <form method="POST">
-    {% csrf_token %}
-    <button type="submit">Delete</button>
-  </form>
-{% endblock %}

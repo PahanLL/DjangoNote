@@ -11,3 +11,7 @@ class GroupForm(forms.ModelForm):
     class Meta:
         model = Group
         fields = ['name', 'color']
+
+class DateRangeForm(forms.Form):
+    start_date = forms.DateField(widget=forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date'}))
+    end_date = forms.DateField(widget=forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date'}))

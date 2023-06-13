@@ -1,10 +1,17 @@
 {% extends 'index.html' %}
+{% load static %}
+
+<link href="{% static 'css/style.css' %}" rel="stylesheet">
 
 {% block content %}
-  <h1>Create a New Group</h1>
-  <form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit" class="btn btn-primary">Create Group</button>
-  </form>
+<div class="background">
+  <div class="content">
+    <h1>Create a New Group</h1>
+    <form method="post">
+      {% csrf_token %}
+      {{ form.as_p }}
+      <button type="submit" class="btn btn-primary">Create Group</button>
+    </form>
+  </div>
+</div>
 {% endblock %}
