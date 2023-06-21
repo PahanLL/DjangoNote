@@ -2,6 +2,10 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
 from .models import Note, Group
 from .forms import NoteForm, GroupForm, DateRangeForm
+import logging
+
+# Logging
+logger = logging.getLogger(__name__)
 
 # Method to get the main page
 @login_required
@@ -13,11 +17,13 @@ def note_list(request):
         if form.is_valid():
             start_date = form.cleaned_data.get('start_date')
             end_date = form.cleaned_data.get('end_date')
-            print(f"Filtering notes from {start_date} to {end_date}")
+            logger.info('Start date: %s', start_date)
             if start_date and end_date:
                 notes = notes.filter(created_at__date__range=(start_date, end_date))
+                logger.info('Filtering notes by date range.')
     else:
         form = DateRangeForm()
+    logger.info('Rendering note list.')
     return render(request, 'note_list.html', {'notes': notes, 'groups': groups, 'form': form})
 
 
@@ -31,9 +37,11 @@ def note_edit(request, pk):
             note = form.save(commit=False)
             note.created_by = request.user
             note.save()
+            logger.info('Note edited successfully.')
             return redirect('note:note_list')
     else:
         form = NoteForm(instance=note)
+    logger.info('Rendering note edit.')
     return render(request, 'note_edit.html', {'form': form})
 
 # Method to delete a new note
@@ -42,7 +50,9 @@ def note_delete(request, pk):
     note = Note.objects.get(pk=pk)
     if request.method == 'POST':
         note.delete()
+        logger.info('Note deleted successfully.')
         return redirect('note:note_list')
+    logger.info('Rendering note delete.')
     return redirect('note:note_list')
 
 # Method to create a new group
@@ -54,9 +64,11 @@ def group_new(request):
             group = form.save(commit=False)
             group.created_by = request.user
             group.save()
+            logger.info('Group created successfully.')
             return redirect('note:note_list')
     else:
         form = GroupForm()
+    logger.info('Rendering group new.')
     return render(request, 'group_new.html', {'form': form})
 
 # Method to add a note to a group
@@ -70,9 +82,11 @@ def group_note_add(request, pk):
             note.group = group
             note.created_by = request.user
             note.save()
+            logger.info('Note added to group successfully.')
             return redirect('note:note_list')
     else:
         form = NoteForm()
+    logger.info('Rendering group note add.')
     return render(request, 'note_add.html', {'form': form})
 
 # Method to delete a group
@@ -81,5 +95,7 @@ def group_delete(request, pk):
     group = Group.objects.get(pk=pk)
     if request.method == 'POST':
         group.delete()
+        logger.info('Group deleted successfully.')
         return redirect('note:note_list')
+    logger.info('Rendering group delete.')
     return redirect('note:note_list')
