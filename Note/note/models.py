@@ -17,3 +17,11 @@ class Note(models.Model):
     created_by = models.ForeignKey(User, on_delete=models.CASCADE)
     group = models.ForeignKey(Group, related_name='notes', on_delete=models.CASCADE, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+class UserProfile(models.Model):    
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    employment_status = models.CharField(max_length=100)
+    profile_photo = models.ImageField(upload_to='profile_photos', null=True, blank=True)
+    
+    def __str__(self):  
+        return self.caption  

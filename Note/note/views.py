@@ -1,31 +1,36 @@
+from django.db.models import Q
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
-from .models import Note, Group
-from .forms import NoteForm, GroupForm, DateRangeForm
+from .models import Note, Group, UserProfile
+from django.contrib.auth import update_session_auth_hash, get_user_model
+from .forms import NoteForm, GroupForm, DateRangeForm, EmploymentStatusForm, ProfilePhotoForm, UserProfileForm
+from django.contrib.auth.forms import PasswordChangeForm
+from django.core.exceptions import ObjectDoesNotExist
+
+
 import logging
 
 # Logging
 logger = logging.getLogger(__name__)
 
-# Method to get the main page
+# Method to create a new note
 @login_required
 def note_list(request):
-    notes = Note.objects.filter(created_by=request.user)
-    groups = Group.objects.filter(created_by=request.user)
-    if request.method == 'POST':
-        form = DateRangeForm(request.POST)
-        if form.is_valid():
-            start_date = form.cleaned_data.get('start_date')
-            end_date = form.cleaned_data.get('end_date')
-            logger.info('Start date: %s', start_date)
-            if start_date and end_date:
-                notes = notes.filter(created_at__date__range=(start_date, end_date))
-                logger.info('Filtering notes by date range.')
+    groups = Group.objects.filter(created_by=request.user)  # фильтруем группы по текущему пользователю
+    date_form = DateRangeForm(request.POST or None)
+    groups_notes = {}
+    if date_form.is_valid():
+        start_date = date_form.cleaned_data.get("start_date")
+        end_date = date_form.cleaned_data.get("end_date")
+        for group in groups:
+            notes = group.notes.filter(created_at__range=[start_date, end_date])
+            if notes:
+                groups_notes[group] = notes
     else:
-        form = DateRangeForm()
-    logger.info('Rendering note list.')
-    return render(request, 'note_list.html', {'notes': notes, 'groups': groups, 'form': form})
+        for group in groups:
+            groups_notes[group] = group.notes.all()
 
+    return render(request, "note_list.html", {"date_form": date_form, "groups_notes": groups_notes})
 
 # Method to edit a note
 @login_required
@@ -99,3 +104,122 @@ def group_delete(request, pk):
         return redirect('note:note_list')
     logger.info('Rendering group delete.')
     return redirect('note:note_list')
+
+# Method to view a profile
+@login_required
+def profile_view(request):
+    user = request.user
+    profile = UserProfile.objects.filter(user=user).first()
+    if not profile:
+        profile = UserProfile.objects.create(user=user)
+
+    if request.method == 'POST':
+        form = UserProfileForm(request.POST, instance=profile)
+        if form.is_valid():
+            form.save()
+            logger.info('Profile updated successfully.')
+            return redirect('note:profile_view')
+    else:
+        form = UserProfileForm(instance=profile)
+
+    password_form = PasswordChangeForm(request.user)
+
+    logger.info('Rendering profile view.')
+    return render(request, 'profile.html', {
+        'form': form,
+        'password_form': password_form,
+        'profile': profile
+    })
+
+# Method to upload a profile photo
+@login_required
+def photo_upload(request):
+    if request.method == 'POST':
+        form = ProfilePhotoForm(request.POST, request.FILES)
+        if form.is_valid():
+            profile = request.user.userprofile
+            profile.profile_photo = form.cleaned_data['profile_photo']
+            profile.save()
+            logger.info('Photo uploaded successfully.')
+            return redirect('note:profile_view')
+    else:
+        form = ProfilePhotoForm()
+    return render(request, 'profile.html', {'form': form})
+
+# Method to delete a profile photo
+@login_required
+def photo_delete(request, pk):
+    try:
+        photo = UserProfile.objects.get(user=request.user).profilephoto_set.get(pk=pk)
+        photo.delete()
+        logger.info('Photo deleted successfully.')
+        return redirect('note:profile_view')
+    except ObjectDoesNotExist:
+        return redirect('note:profile_view')
+
+# Method to update employment status
+@login_required
+def employment_status_update(request):
+    try:
+        profile = UserProfile.objects.get(user=request.user)
+        if request.method == 'POST':
+            form = EmploymentStatusForm(request.POST, instance=profile)
+            if form.is_valid():
+                profile.employment_status = form.cleaned_data['employment_status']
+                profile.save()
+                logger.info('Employment status updated successfully.')
+                return redirect('note:profile_view')
+        else:
+            form = EmploymentStatusForm(instance=profile)
+        return render(request, 'profile.html', {'form': form})
+    except ObjectDoesNotExist:
+        return render(request, '404.html')
+
+# Method to change password
+@login_required
+def change_password(request):
+    if request.method == 'POST':
+        form = PasswordChangeForm(request.user, request.POST)
+        if form.is_valid():
+            user = form.save()
+            update_session_auth_hash(request, user) 
+            logger.info('Your password was successfully updated!')
+            return redirect('profile_view')
+        else:
+            logger.error('Password change failed.')
+    else:
+        form = PasswordChangeForm(request.user)
+    return render(request, 'profile.html', {'form': form})
+
+# Method to delete a user
+@login_required
+def profile_delete(request, pk):
+    User = get_user_model()
+    user = User.objects.get(pk=pk)
+    if request.user == user:
+        if request.method == 'POST':
+            user.delete()  
+            logger.info('User deleted successfully.')
+            return redirect('logout')
+        else:
+            return render(request, 'login.html')
+    else:
+        return redirect('login')
+
+# Method to search notes
+@login_required
+def search_notes(request):
+    query = request.GET.get('q')
+    groups = Group.objects.all()
+    date_form = DateRangeForm(request.POST or None)
+    groups_notes = {}
+
+    if query:
+        q = Q(title__icontains=query) | Q(content__icontains=query)
+        groups_notes = {group: group.notes.filter(q) for group in groups}
+    else:
+        for group in groups:
+            groups_notes[group] = group.notes.all()
+
+    return render(request, "note_list.html", {"date_form": date_form, "groups_notes": groups_notes})
+

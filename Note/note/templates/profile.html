@@ -1,0 +1,91 @@
+{% extends 'index.html' %}
+{% load static %}
+
+<link href="{% static './css/style.css' %}" rel="stylesheet">
+
+{% block content %}
+<div class="background">
+  <div class="content">
+
+    <div class="profile-info">
+      
+      <!-- Upload Photo -->
+      <div class="profile-image">
+        {% if profile.profile_photo %}
+            <img class="profile-photo" src="{{ profile.profile_photo.url }}" alt="Profile Picture">
+        {% else %}
+            <img class="profile-photo" src="{% static 'images/default.png' %}" alt="Default Profile Picture">
+        {% endif %}
+      </div>
+      <form method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ form.employment_status }}
+        {{ form.profile_photo }}
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+      </form>      
+      <p>User status: {{ profile.employment_status }}</p>
+    </div>
+
+    <div class="password-change">
+      <h2>Change Password</h2>
+      <form method="POST">
+        {% csrf_token %}
+        {{ password_form.as_p }}
+        <button type="submit" name="change_password" class="btn btn-primary">Change Password</button>
+      </form>
+    </div>
+
+    <div class="profile-delete">
+      <h2>Delete Profile</h2>
+      <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#deleteProfileModal">Delete Profile</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- Delete Photo Confirmation Modal -->
+<div class="modal fade" id="deletePhotoModal" tabindex="-1" role="dialog" aria-labelledby="deletePhotoModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="deletePhotoModalLabel">Confirm Photo Deletion</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        Are you sure you want to delete your profile photo?
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+        <form method="POST" action="{% url 'note:photo_delete' pk=request.user.pk %}">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-danger">Delete</button>
+        </form>      
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Profile Confirmation Modal -->
+<div class="modal fade" id="deleteProfileModal" tabindex="-1" role="dialog" aria-labelledby="deleteProfileModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="deleteProfileModalLabel">Confirm Profile Deletion</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        Are you sure you want to delete your profile? This cannot be undone.
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+        <a href="{% url 'note:profile_delete' pk=request.user.pk %}" class="btn btn-danger">Delete</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

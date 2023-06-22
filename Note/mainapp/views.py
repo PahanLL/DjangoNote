@@ -31,3 +31,4 @@ def logout_view(request):
 def homepage(request):
     logger.info('Rendering homepage.')
     return redirect('note:note_list')
+    

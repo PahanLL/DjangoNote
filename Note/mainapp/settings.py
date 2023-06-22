@@ -127,6 +127,10 @@ STATICFILES_DIRS = [
     BASE_DIR / 'static',
 ]
 
+SESSION_COOKIE_AGE = 180
+
+SESSION_SAVE_EVERY_REQUEST = True
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
@@ -156,4 +160,21 @@ LOGGING = {
         'handlers': ['file'],
         'level': 'DEBUG',
     },
+}
+
+# Base url to serve media files  
+MEDIA_URL = '/media/'  
+  
+# Path where media is stored  
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')  
+
+# Content Security Policy
+CSP_HEADER = {
+    'default-src': "'self'",
+    'script-src': ["'self'", "'unsafe-inline'"],
+    'style-src': ["'self'", "'unsafe-inline'"],
+    'img-src': ["'self'", "data:"],
+    'font-src': ["'self'"],
+    'connect-src': ["'self'"],
+    'media-src': ["'self'"],
 }
